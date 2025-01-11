@@ -5,7 +5,13 @@ from utils.mouseActions import click
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from utils.utilsFunctions import enterPasswordTwice
+from random import randint
+import time
+import datetime
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 # options = webdriver.ChromeOptions()
 # options.add_experimental_option("detach", True)
 # TODO create a list or key of days and time
@@ -16,18 +22,22 @@ day_keys = {
     "Thursday": "Thu",
     "Friday": "Fri",
 }
+# TODO replace username and password with dotenv
+driver_pass = 1
+time_inbound_list = {0: "06:05"}
+username = os.getenv('username')
 
-time_inbound_list = {
-    0: "06:05"
-}
-username = "kayphaz007@gmail.com"
-password = "Pa55w0rd!"
+password = os.getenv('password')
+
 # day = "Thu"
-day = day_keys["Friday"]
-inbound = "06:05"
-# inbound = "08:35"
-outbound = "14:45"
-# outbound = "16:15"
+day = day_keys["Tuesday"]
+inbound = "08:35"
+# inbound = "07:35"
+outbound = "16:35"
+# outbound = "17:15"
+# should I delay if trips are fully booked
+trips_are_fully_booked_delay = True
+
 
 zeeloUrl = "http://app.zeelo.co/my-zeelo"
 
@@ -75,12 +85,20 @@ enterPasswordTwice(driver, password)
 
 # click Manage your passes
 
-elem_continue = driver.find_element(
-    By.XPATH, "//div[@data-testid='my_rides__travel_pass[0]']"
+# elem_continue = driver.find_element(
+#     By.XPATH, "//div[@data-testid='my_rides__travel_pass[0]']"
+# )
+
+elem_continue = wait.until(
+    EC.element_to_be_clickable(
+        (
+            By.XPATH,
+            f"//div[@data-testid='my_rides__travel_pass[{driver_pass-1}]']",
+        )
+    )
 )
 
 click(driver, elem_continue)
-
 
 
 # used a for loop to loop through each date div element, and select the element with date of Thursday, and not the first element
@@ -96,6 +114,8 @@ def selectDate():  # click a date
         #         (By.CSS_SELECTOR, "div.inuFBJ")
         #     )
         # )
+        driver.implicitly_wait(3)
+
         def filter_function(element):
             return (
                 day
@@ -116,7 +136,8 @@ def selectDate():  # click a date
         click(driver, elem_continue)
 
     except Exception as error:
-        print(f"Error: {error}")
+        print("select date error")
+        # print(f"Error: {error}")
 
 
 # click outbound select times
@@ -254,6 +275,13 @@ while header_element is None:
 
     click_close_button()
     print("I clicked the close button")
+    # TODO delay the process of repeating... Put an option button to delay
+    if trips_are_fully_booked_delay:
+        # How long should I delay
+        delay_duration = randint(5, 10)
+        print(delay_duration, datetime.datetime.now())
+        time.sleep(delay_duration * 60)
+        # driver.implicitly_wait(delay_duration*60)
 
 
 if "Repeat" in header_element.text:
@@ -291,6 +319,10 @@ if "Repeat" in header_element.text:
     )
 
     click(driver, confirm_bookings_element)
+    # TODO handle "more users are currently booking in the repeat page.."
+    while confirm_bookings_element.is_enabled():
+        click(driver, confirm_bookings_element)
+
     # if not successful
     # click the close button
     # restart booking again
@@ -306,6 +338,7 @@ if "Repeat" in header_element.text:
 
 
 # elem.clear()
+print("hello")
 driver.close()
 
 # elem.send_keys("pycon")
